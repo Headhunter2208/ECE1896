@@ -12,17 +12,17 @@ struct State {
   int BStep;
   int CStep;
 
-  int X;
-  int Y;
-  int Z;
+  double X;
+  double Y;
+  double Z;
 
-  int A;
-  int B;
-  int C;
+  double A;
+  double B;
+  double C;
+  double Grip;
 };
 
 String ReadInSerial = "";
-int StartAtChar = 0;
 State sInitial;  // initial state
 State sFinal;    // final state
 
@@ -68,60 +68,78 @@ void loop() {
 State ParseString(String InputString) {
   State s;
 
-  if (Flag == 0) {
-    if (InputString.length() == 40) {
-      //Flag = 1;
-      ////////// SUBSTRING X //////////
-      if (InputString.substring(0, 1).equals("X")) {
-        s.X = InputString.substring(2, 5).toInt();
-        moveStepper(sInitial.XStep, s.X, sInitial.X);
-        sInitial.X = s.X;
-        Flag = 1;
-      } else s.X = sInitial.X;
+  int StartAtChar = 0;
+  ////////// SUBSTRING X //////////
+  int xCommaVal = InputString.indexOf(",", StartAtChar);
+  String xTempString = InputString.substring(0, xCommaVal);
+  s.X = xTempString.toDouble();
+  Serial.println("SUBSTRING X");
+  Serial.println(xTempString);
+  Serial.println(s.X);
+  sInitial.X = s.X;
+  StartAtChar = xCommaVal + 1;
 
-      ////////// SUBSTRING Y //////////
-      if (InputString.substring(7, 8).equals("Y")) {
-        //Serial.println("Valid String Y");
-        s.Y = InputString.substring(9, 12).toInt();
-      } else s.Y = sInitial.Y;
+  ////////// SUBSTRING Y //////////
+  int yCommaVal = InputString.indexOf(",", StartAtChar);
+  String yTempString = InputString.substring(StartAtChar, yCommaVal);
+  s.Y = yTempString.toDouble();
+  Serial.println("SUBSTRING Y");
+  Serial.println(yTempString);
+  Serial.println(s.Y * 10000);
+  sInitial.Y = s.Y;
+  StartAtChar = yCommaVal + 1;
 
-      ////////// SUBSTRING Z //////////
-      if (InputString.substring(14, 15).equals("Z")) {
-        //Serial.println("Valid String Z");
-        s.Z = InputString.substring(16, 19).toInt();
-      } else s.Z = sInitial.Z;
+    ////////// SUBSTRING Z //////////
+  int zCommaVal = InputString.indexOf(",", StartAtChar);
+  String zTempString = InputString.substring(StartAtChar, zCommaVal);
+  s.Z = zTempString.toDouble();
+  Serial.println("SUBSTRING Z");
+  Serial.println(zTempString);
+  Serial.println(s.Z * 10000);
+  sInitial.Z = s.Z;
+  StartAtChar = zCommaVal + 1;
 
-      ////////// SUBSTRING A //////////
-      if (InputString.substring(21, 22).equals("A")) {
-        //Serial.println("Valid String A");
-        s.A = InputString.substring(23, 26).toInt();
-      } else s.A = sInitial.A;
+  ////////// SUBSTRING A //////////
+  int aCommaVal = InputString.indexOf(",", StartAtChar);
+  String aTempString = InputString.substring(StartAtChar, aCommaVal);
+  s.A = aTempString.toDouble();
+  Serial.println("SUBSTRING A");
+  Serial.println(aTempString);
+  Serial.println(s.A * 10000);
+  sInitial.A = s.A;
+  StartAtChar = aCommaVal + 1;
 
-      ////////// SUBSTRING B //////////
-      if (InputString.substring(28, 29).equals("B")) {
-        //Serial.println("Valid String B");
-        s.B = InputString.substring(30, 33).toInt();
-      } else s.B = sInitial.B;
+    ////////// SUBSTRING B //////////
+  int bCommaVal = InputString.indexOf(",", StartAtChar);
+  String bTempString = InputString.substring(StartAtChar, bCommaVal);
+  s.B = bTempString.toDouble();
+  Serial.println("SUBSTRING B");
+  Serial.println(bTempString);
+  Serial.println(s.B * 10000);
+  sInitial.B = s.B;
+  StartAtChar = bCommaVal + 1;
 
-      ////////// SUBSTRING C //////////
-      if (InputString.substring(35, 36).equals("C")) {
-        //Serial.println("Valid String C");
-        s.C = InputString.substring(37, 40).toInt();
-      } else s.C = sInitial.C;
-    }
+  ////////// SUBSTRING C //////////
+  int cCommaVal = InputString.indexOf(",", StartAtChar);
+  String cTempString = InputString.substring(StartAtChar, cCommaVal);
+  s.C = cTempString.toDouble();
+  Serial.println("SUBSTRING C");
+  Serial.println(cTempString);
+  Serial.println(s.C * 10000);
+  sInitial.C = s.C;
+  StartAtChar = cCommaVal + 1;
 
-    //else for if the whole input string is longer than 40 chars
-    else {
-      Flag = 1;
-      Serial.println("Invalid String");
-      s.X = sInitial.X;
-      s.Y = sInitial.Y;
-      s.Z = sInitial.Z;
-      s.A = sInitial.A;
-      s.B = sInitial.B;
-      s.C = sInitial.C;
-    }
-  }
+  ////////// SUBSTRING GRIPPER //////////
+  int gripCommaVal = InputString.indexOf(",", StartAtChar);
+  Serial.println(gripCommaVal);
+  String gripTempString = InputString.substring(StartAtChar, gripCommaVal);
+  s.Grip = gripTempString.toDouble();
+  Serial.println("SUBSTRING GRIPPER");
+  Serial.println(gripTempString);
+  Serial.println(s.Grip);
+  sInitial.Grip = s.Grip;
+  StartAtChar = gripCommaVal + 1;
+
   return s;
 }
 
