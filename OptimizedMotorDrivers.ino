@@ -1,25 +1,26 @@
 #include <math.h>
+#include <digitalWriteFast.h>
 
 const int XStep = 2;
 const int XDir = 5;
 int Flag = 0;
 
 struct State {
-  int XStep;
-  int YStep;
-  int ZStep;
-  int AStep;
-  int BStep;
-  int CStep;
+  int XStepPin;
+  int YStepPin;
+  int ZStepPin;
+  int AStepPin;
+  int BStepPin;
+  int CStepPin;
 
-  double X;
-  double Y;
-  double Z;
+  int X;
+  int Y;
+  int Z;
 
-  double A;
-  double B;
-  double C;
-  double Grip;
+  int A;
+  int B;
+  int C;
+  int Grip;
 };
 
 String ReadInSerial = "";
@@ -30,9 +31,8 @@ void setup() {
   // sets up motors functions and directions
   pinMode(XStep, OUTPUT);
   pinMode(XDir, OUTPUT);
-  digitalWrite(XDir, HIGH);  // High = clockwise
 
-  HomeMotors(XStep);
+  //HomeMotors(XStep);
 
   Serial.begin(9600);
   Serial.println("Begin Serial");
@@ -45,12 +45,12 @@ void setup() {
   sInitial.B = 0;
   sInitial.C = 0;
 
-  sInitial.XStep = 2;
-  sInitial.YStep = 0;
-  sInitial.ZStep = 0;
-  sInitial.AStep = 0;
-  sInitial.BStep = 0;
-  sInitial.CStep = 0;
+  sInitial.XStepPin = 2;
+  sInitial.YStepPin = 0;
+  sInitial.ZStepPin = 0;
+  sInitial.AStepPin = 0;
+  sInitial.BStepPin = 0;
+  sInitial.CStepPin = 0;
 }
 
 void loop() {
@@ -60,9 +60,8 @@ void loop() {
 
     Flag = 0;
     ReadInSerial = Serial.readString();
+    sFinal = ParseString(ReadInSerial);
   }
-
-  sFinal = ParseString(ReadInSerial);
 }
 
 State ParseString(String InputString) {
@@ -72,10 +71,10 @@ State ParseString(String InputString) {
   ////////// SUBSTRING X //////////
   int xCommaVal = InputString.indexOf(",", StartAtChar);
   String xTempString = InputString.substring(0, xCommaVal);
-  s.X = xTempString.toDouble();
+  s.X = xTempString.toInt();
   Serial.println("SUBSTRING X");
-  Serial.println(xTempString);
   Serial.println(s.X);
+  moveStepper(sInitial.XStepPin, s.X, sInitial.X);
   sInitial.X = s.X;
   StartAtChar = xCommaVal + 1;
 
@@ -85,7 +84,7 @@ State ParseString(String InputString) {
   s.Y = yTempString.toDouble();
   Serial.println("SUBSTRING Y");
   Serial.println(yTempString);
-  Serial.println(s.Y * 10000);
+  Serial.println(s.Y);
   sInitial.Y = s.Y;
   StartAtChar = yCommaVal + 1;
 
@@ -95,7 +94,7 @@ State ParseString(String InputString) {
   s.Z = zTempString.toDouble();
   Serial.println("SUBSTRING Z");
   Serial.println(zTempString);
-  Serial.println(s.Z * 10000);
+  Serial.println(s.Z);
   sInitial.Z = s.Z;
   StartAtChar = zCommaVal + 1;
 
@@ -105,7 +104,7 @@ State ParseString(String InputString) {
   s.A = aTempString.toDouble();
   Serial.println("SUBSTRING A");
   Serial.println(aTempString);
-  Serial.println(s.A * 10000);
+  Serial.println(s.A);
   sInitial.A = s.A;
   StartAtChar = aCommaVal + 1;
 
@@ -115,7 +114,7 @@ State ParseString(String InputString) {
   s.B = bTempString.toDouble();
   Serial.println("SUBSTRING B");
   Serial.println(bTempString);
-  Serial.println(s.B * 10000);
+  Serial.println(s.B);
   sInitial.B = s.B;
   StartAtChar = bCommaVal + 1;
 
@@ -125,7 +124,7 @@ State ParseString(String InputString) {
   s.C = cTempString.toDouble();
   Serial.println("SUBSTRING C");
   Serial.println(cTempString);
-  Serial.println(s.C * 10000);
+  Serial.println(s.C);
   sInitial.C = s.C;
   StartAtChar = cCommaVal + 1;
 
@@ -149,9 +148,9 @@ void moveStepper(int MotorPin, int sFinalX, int sInitialX) {
     sFinalX = abs(sFinalX - sInitialX);
 
     for (int k = 0; k < sFinalX * 8 * 0.5555555555; k++) {
-      digitalWrite(MotorPin, HIGH);
+      digitalWriteFast(MotorPin, HIGH);
       delay(1);
-      digitalWrite(MotorPin, LOW);
+      digitalWriteFast(MotorPin, LOW);
       delay(1);
     }
   } else {
@@ -159,9 +158,9 @@ void moveStepper(int MotorPin, int sFinalX, int sInitialX) {
     sFinalX = abs(sFinalX - sInitialX);
 
     for (int k = 0; k < sFinalX * 8 * 0.5555555555; k++) {
-      digitalWrite(MotorPin, HIGH);
+      digitalWriteFast(MotorPin, HIGH);
       delay(1);
-      digitalWrite(MotorPin, LOW);
+      digitalWriteFast(MotorPin, LOW);
       delay(1);
     }
   }
@@ -170,6 +169,7 @@ void moveStepper(int MotorPin, int sFinalX, int sInitialX) {
 
 
 void HomeMotors(int MotorPin) {
+  digitalWrite(XDir, HIGH);  // High = clockwise
   int t = 0;
   while (t < 360 * 8 * 0.5555555555) {
     digitalWrite(MotorPin, HIGH);
