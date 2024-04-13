@@ -5,7 +5,7 @@ const int StepsPerDegree = 8;
 const float DegreesOverSteps = 0.5555555555555555;
 
 const int XDir = 5;
-const int YDir = 0;
+const int YDir = 6;
 const int ZDir = 0;
 const int ADir = 0;
 const int BDir = 0;
@@ -13,7 +13,7 @@ const int CDir = 0;
 const int GripDir = 0;
 
 const int XStepPin = 2;
-const int YStepPin;
+const int YStepPin = 3;
 const int ZStepPin;
 const int AStepPin;
 const int BStepPin;
