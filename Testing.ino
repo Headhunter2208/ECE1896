@@ -2,7 +2,7 @@
 #include <digitalWriteFast.h>
 
 const int StepsPerDegree = 8;
-const float DegreesOverSteps = 0.55555555555555555;
+const float DegreesOverSteps = 0.5555555555555555;
 
 const int XDir = 5;
 const int YDir = 0;
