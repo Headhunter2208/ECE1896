@@ -1,25 +1,41 @@
 #include <math.h>
 #include <digitalWriteFast.h>
+#include <Encoder.h>
 
-const int StepsPerDegree = 2;
+// Declare constant multipliers and variables used for testing
+const int StepsPerDegree = 8;
 const float DegreesOverSteps = 0.55555555555555555;
+unsigned long TimeDelayMilliBEFORE;
+unsigned long TimeDelayMilliAFTER;
+unsigned long TimeDelayMilliMOVE;
 
+// Declare Direction pins for each motor
 const int XDir = 5;
-const int YDir = 0;
+const int YDir = 6;
 const int ZDir = 0;
 const int ADir = 0;
 const int BDir = 0;
 const int CDir = 0;
 const int GripDir = 0;
 
+// Declare driving step pins for all motors
 const int XStepPin = 2;
-const int YStepPin;
+const int YStepPin = 3;
 const int ZStepPin;
 const int AStepPin;
 const int BStepPin;
 const int CStepPin;
 const int GripStepPin;
 
+// Declare constant gear ratio multipliers for moving motors
+const float xGearRatioMult = 13.5;
+const float yGearRatioMult = 150;
+const float zGearRatioMult = 150;
+const float aGearRatioMult = 48;
+const float bGearRatioMult = 67.82;
+const float cGearRatioMult = 67.82;
+
+// Create struct that holds all joint angle positions
 struct State {
   int X = 0;
   int Y = 0;
@@ -36,10 +52,23 @@ State sInitial;  // initial state
 State sFinal;    // final state
 
 void setup() {
-  // sets up motors functions and directions
+  // sets up motors functions and directions as outputs
   pinMode(XStepPin, OUTPUT);
   pinMode(XDir, OUTPUT);
+  pinMode(YStepPin, OUTPUT);
+  pinMode(YDir, OUTPUT);
+  pinMode(ZStepPin, OUTPUT);
+  pinMode(ZDir, OUTPUT);
+  pinMode(AStepPin, OUTPUT);
+  pinMode(ADir, OUTPUT);
+  pinMode(BStepPin, OUTPUT);
+  pinMode(BDir, OUTPUT);
+  pinMode(CStepPin, OUTPUT);
+  pinMode(CDir, OUTPUT);
+  pinMode(GripStepPin, OUTPUT);
+  pinMode(GripDir, OUTPUT);
 
+  // Init starting states for each struct
   sInitial.X = 0;
   sInitial.Y = 0;
   sInitial.Z = 0;
@@ -54,30 +83,40 @@ void setup() {
   sFinal.B = 0;
   sFinal.C = 0;
 
-  Serial.begin(9600);
+  // Init serial data connections
+  Serial.begin(115200);
   Serial.println("Begin Serial");
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  // Checking serial buffer has available space
   if (Serial.available() > 0) {
+    // Used for Latency Testing
+    TimeDelayMilliBEFORE = millis();
 
     ReadInSerial = Serial.readStringUntil('\n');
 
     // Parse Incoming joint data via serial connection
     sFinal = ParseString(ReadInSerial);
 
+    // Output latency time from 
+    TimeDelayMilliAFTER = millis();
+    Serial.println(TimeDelayMilliAFTER - TimeDelayMilliBEFORE);
+
     // Move motors according to new states
-    moveStepper(XStepPin, XDir, sFinal.X, sInitial.X);
-    // moveStepper(YDir, YStepPin, sFinal.Y, sInitial.Y);
-    // moveStepper(ZDir, ZStepPin, sFinal.Z, sInitial.Z);
-    // moveStepper(ADir, AStepPin, sFinal.A, sInitial.A);
-    // moveStepper(BDir, BStepPin, sFinal.B, sInitial.B);
-    // moveStepper(CDir, CStepPin, sFinal.C, sInitial.C);
-    // moveStepper(GripDir, GripStepPin, sFinal.Grip, sInitial.Grip);
+    moveStepper(XStepPin, XDir, sFinal.X, sInitial.X, xGearRatioMult);
+    moveStepper(YStepPin, YDir, sFinal.Y, sInitial.Y, yGearRatioMult);
+    moveStepper(ZStepPin, ZDir, sFinal.Z, sInitial.Z, zGearRatioMult);
+    moveStepper(AStepPin, ADir, sFinal.A, sInitial.A, aGearRatioMult);
+    moveStepper(BStepPin, BDir, sFinal.B, sInitial.B, bGearRatioMult);
+    moveStepper(CStepPin, CDir, sFinal.C, sInitial.C, cGearRatioMult);
+    moveStepper(GripStepPin, GripDir, sFinal.Grip, sInitial.Grip, 1.0);
 
     //Update states for next iterations of movements
     sInitial = UpdateStates(sFinal);
+
+    // Prints joint locations of robot arm to serial
+    PrintLocation(sFinal);
   }
 }
 
@@ -130,27 +169,28 @@ State ParseString(String InputString) {
   return s;
 }
 
-void moveStepper(int StepPin, int StepDir, int sFinal, int sInitial) {
-  // Move section for X stepper motor
+void moveStepper(int StepPin, int StepDir, int sFinal, int sInitial, float GearRatioMult) {
   if (sFinal < sInitial) {
-    digitalWrite(StepDir, LOW);  // High = clockwise
+    digitalWrite(StepDir, LOW);  // low = counter-clockwise
     sFinal = abs(sFinal - sInitial);
+    sFinal = sFinal * StepsPerDegree * DegreesOverSteps * GearRatioMult;
 
-    for (int k = 0; k < sFinal * StepsPerDegree * DegreesOverSteps; k++) {
-      digitalWrite(StepPin, HIGH);
-      delay(1);
-      digitalWrite(StepPin, LOW);
-      delay(1);
+    for (int k = 0; k < sFinal; k++) {
+      digitalWriteFast(StepPin, HIGH);
+      delayMicroseconds(500);
+      digitalWriteFast(StepPin, LOW);
+      delayMicroseconds(500);
     }
   } else {
     digitalWrite(StepDir, HIGH);  // High = clockwise
     sFinal = abs(sFinal - sInitial);
+    sFinal = sFinal * StepsPerDegree * DegreesOverSteps * GearRatioMult;
 
-    for (int k = 0; k < sFinal * StepsPerDegree * DegreesOverSteps; k++) {
-      digitalWrite(StepPin, HIGH);
-      delay(1);
-      digitalWrite(StepPin, LOW);
-      delay(1);
+    for (int k = 0; k < sFinal; k++) {
+      digitalWriteFast(StepPin, HIGH);
+      delayMicroseconds(500);
+      digitalWriteFast(StepPin, LOW);
+      delayMicroseconds(500);
     }
   }
 }
@@ -168,13 +208,30 @@ State UpdateStates(State sFinal) {
   return s;
 }
 
-void HomeMotors(int MotorPin) {
-  digitalWrite(XDir, HIGH);  // High = clockwise
+void PrintLocation(State s){
+  Serial.print(s.X);
+  Serial.print(", ");
+  Serial.print(s.Y);
+  Serial.print(", ");
+  Serial.print(s.Z);
+  Serial.print(", ");
+  Serial.print(s.A);
+  Serial.print(", ");
+  Serial.print(s.B);
+  Serial.print(", ");
+  Serial.print(s.C);
+  Serial.print(", ");
+  Serial.print(s.Grip);
+  Serial.print("\n");
+}
+
+void HomeMotors(int MotorPin, int DirPin) {
+  digitalWrite(DirPin, LOW);  // low = counter-clockwise
   int t = 0;
-  while (t < 360 * 8 * 0.555555555555) {
-    digitalWrite(MotorPin, HIGH);
+  while (t < 360 * StepsPerDegree * DegreesOverSteps) {
+    digitalWriteFast(MotorPin, HIGH);
     delay(1);
-    digitalWrite(MotorPin, LOW);
+    digitalWriteFast(MotorPin, LOW);
     delay(1);
     t += 1;
   }
